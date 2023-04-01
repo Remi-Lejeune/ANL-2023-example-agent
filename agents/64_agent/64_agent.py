@@ -162,13 +162,15 @@ class Agent_64(DefaultParty):
         """This method is called when it is our turn. It should decide upon an action
         to perform and send this action to the opponent.
         """
+
+        bid = self.find_bid()
         # check if the last received offer is good enough
-        if self.accept_condition(self.last_received_bid):
+        if self.accept_condition(self.last_received_bid, bid):
             # if so, accept the offer
             action = Accept(self.me, self.last_received_bid)
         else:
             # if not, find a bid to propose as counter offer
-            bid = self.find_bid()
+
             action = Offer(self.me, bid)
 
         # send the action
@@ -187,8 +189,8 @@ class Agent_64(DefaultParty):
     ################################## Example methods below ##################################
     ###########################################################################################
 
-    def accept_condition(self, bid: Bid) -> bool:
-        if bid is None:
+    def accept_condition(self, received_bid: Bid, next_bid: Bid) -> bool:
+        if received_bid is None:
             return False
 
         # progress of the negotiation session between 0 and 1 (1 is deadline)
@@ -197,10 +199,12 @@ class Agent_64(DefaultParty):
         # very basic approach that accepts if the offer is valued above 0.7 and
         # 95% of the time towards the deadline has passed
         conditions = [
-            self.profile.getUtility(bid) > 0.8,
-            progress > 0.95,
+            self.simple_acceptance_condition(received_bid, next_bid)
         ]
         return all(conditions)
+
+    def simple_acceptance_condition(self, received_bid: Bid, next_bid: Bid) -> bool:
+        return self.profile.getUtility(received_bid) >= self.profile.getUtility(next_bid)
 
     def find_bid(self) -> Bid:
         # compose a list of all possible bids
@@ -213,14 +217,14 @@ class Agent_64(DefaultParty):
         # take 500 attempts to find a bid according to a heuristic score
         for _ in range(500):
             bid = all_bids.get(randint(0, all_bids.size() - 1))
-            bid_score = self.score_bid(bid) #can add values for parameters
+            bid_score = self.score_bid(bid)  # can add values for parameters
             if bid_score > best_bid_score:
                 best_bid_score, best_bid = bid_score, bid
 
         return best_bid
 
-    def score_bid(self, bid: Bid,  MinUtility = 0.58, MaxUtility = 1, k = 0.05, e = 5, T = 1) -> float:
-        #def score_bid(self, bid: Bid, alpha: float = 0.95, eps: float = 0.1) -> float:
+    def score_bid(self, bid: Bid, MinUtility=0.58, MaxUtility=1, k=0.05, e=5, T=1) -> float:
+        # def score_bid(self, bid: Bid, alpha: float = 0.95, eps: float = 0.1) -> float:
         """Calculate heuristic score for a bid
 
         Args:
@@ -234,8 +238,8 @@ class Agent_64(DefaultParty):
             float: score
         """
 
-        #Our agent gives 0 for bids it wont consider and 1 for bids it will.
-        #The opponent moddeling will determine which bid with a score of 1  will be made.
+        # Our agent gives 0 for bids it wont consider and 1 for bids it will.
+        # The opponent moddeling will determine which bid with a score of 1  will be made.
 
         our_utility = float(self.profile.getUtility(bid))
 
@@ -245,24 +249,21 @@ class Agent_64(DefaultParty):
         # e = 0.02
         # T = 10000
 
-        #T is 1
-        t = self.progress.get(time() * 1000) # in between 0 and 1
+        # T is 1
+        t = self.progress.get(time() * 1000)  # in between 0 and 1
         # print("t: ", t)
 
-        Ft = k + (1-k) * (min(t, T)/T) **(1/e)
+        Ft = k + (1 - k) * (min(t, T) / T) ** (1 / e)
         # print("Ft: ", Ft)
 
-        P = MinUtility + (1-Ft) * (MaxUtility - MinUtility)
+        P = MinUtility + (1 - Ft) * (MaxUtility - MinUtility)
         # print("P: ", P)
-        if(our_utility > P):
+        if (our_utility > P):
             return 1
         else:
             return 0
-        #from template agent:
+        # from template agent:
         # progress = self.progress.get(time() * 1000)
-
-
-
 
         # time_pressure = 1.0 - progress ** (1 / eps)
         # score = alpha * time_pressure * our_utility
