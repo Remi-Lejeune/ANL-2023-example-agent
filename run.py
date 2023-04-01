@@ -20,10 +20,12 @@ settings = {
         {
             "class": "agents.ANL2022.dreamteam109_agent.dreamteam109_agent.DreamTeam109Agent",
             "parameters": {"storage_dir": "agent_storage/DreamTeam109Agent"},
+            # "class": "agents.boulware_agent.boulware_agent.BoulwareAgent",
+            # "parameters": {"storage_dir": "agent_storage/BoulwareAgent"},
         },
         {
-            "class": "agents.template_agent.template_agent.TemplateAgent",
-            "parameters": {"storage_dir": "agent_storage/TemplateAgent"},
+            "class": "agents.64_agent.64_agent.Agent_64",
+            "parameters": {"storage_dir": "agent_storage/64_agent"},
         },
     ],
     "profiles": ["domains/domain00/profileA.json", "domains/domain00/profileB.json"],

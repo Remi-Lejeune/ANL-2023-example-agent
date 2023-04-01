@@ -30,9 +30,9 @@ from tudelft_utilities_logging.ReportToLogger import ReportToLogger
 from .utils.opponent_model import OpponentModel
 
 
-class TemplateAgent(DefaultParty):
+class Agent_64(DefaultParty):
     """
-    Template of a Python geniusweb agent.
+    Group 64 implementation of negotiator
     """
 
     def __init__(self):
@@ -137,7 +137,7 @@ class TemplateAgent(DefaultParty):
         Returns:
             str: Agent description
         """
-        return "Template agent for the ANL 2022 competition"
+        return "group 64 agent for CAI assignment 2023"
 
     def opponent_action(self, action):
         """Process an action that was received from the opponent.
@@ -207,19 +207,20 @@ class TemplateAgent(DefaultParty):
         domain = self.profile.getDomain()
         all_bids = AllBidsList(domain)
 
-        best_bid_score = 0.0
+        best_bid_score = -0.1
         best_bid = None
 
         # take 500 attempts to find a bid according to a heuristic score
         for _ in range(500):
             bid = all_bids.get(randint(0, all_bids.size() - 1))
-            bid_score = self.score_bid(bid)
+            bid_score = self.score_bid(bid) #can add values for parameters
             if bid_score > best_bid_score:
                 best_bid_score, best_bid = bid_score, bid
 
         return best_bid
 
-    def score_bid(self, bid: Bid, alpha: float = 0.95, eps: float = 0.1) -> float:
+    def score_bid(self, bid: Bid,  MinUtility = 0.58, MaxUtility = 1, k = 0.05, e = 5, T = 1) -> float:
+        #def score_bid(self, bid: Bid, alpha: float = 0.95, eps: float = 0.1) -> float:
         """Calculate heuristic score for a bid
 
         Args:
@@ -232,16 +233,43 @@ class TemplateAgent(DefaultParty):
         Returns:
             float: score
         """
-        progress = self.progress.get(time() * 1000)
+
+        #Our agent gives 0 for bids it wont consider and 1 for bids it will.
+        #The opponent moddeling will determine which bid with a score of 1  will be made.
 
         our_utility = float(self.profile.getUtility(bid))
 
-        time_pressure = 1.0 - progress ** (1 / eps)
-        score = alpha * time_pressure * our_utility
+        # MinUtility = 0
+        # MaxUtility = 1
+        # k = 0.05
+        # e = 0.02
+        # T = 10000
 
-        if self.opponent_model is not None:
-            opponent_utility = self.opponent_model.get_predicted_utility(bid)
-            opponent_score = (1.0 - alpha * time_pressure) * opponent_utility
-            score += opponent_score
+        #T is 1
+        t = self.progress.get(time() * 1000) # in between 0 and 1
+        # print("t: ", t)
+
+        Ft = k + (1-k) * (min(t, T)/T) **(1/e)
+        # print("Ft: ", Ft)
+
+        P = MinUtility + (1-Ft) * (MaxUtility - MinUtility)
+        # print("P: ", P)
+        if(our_utility > P):
+            return 1
+        else:
+            return 0
+        #from template agent:
+        # progress = self.progress.get(time() * 1000)
+
+
+
+
+        # time_pressure = 1.0 - progress ** (1 / eps)
+        # score = alpha * time_pressure * our_utility
+        #
+        # if self.opponent_model is not None:
+        #     opponent_utility = self.opponent_model.get_predicted_utility(bid)
+        #     opponent_score = (1.0 - alpha * time_pressure) * opponent_utility
+        #     score += opponent_score
 
         return score
