@@ -41,12 +41,12 @@ class OpponentModel:
                 # check if it hasn't changed since the last one, or any before
                 new_value = bid.getValue(name).getValue()
                 old_value = self.latest.getValue(name).getValue()
-                if old_value == new_value and self.offers[name]:
+                if old_value == new_value:
                     self.weights[name] += self.learning_rate
                     if self.utility_estimate.__contains__((name, new_value)):
-                        self.utility_estimate[(name, new_value)] += 1
+                        self.utility_estimate[(name, new_value)] += 2
                     else:
-                        self.utility_estimate[(name, new_value)] = 1
+                        self.utility_estimate[(name, new_value)] = 2
                 else:
                     # issue has changed, so we keep track of this and no longer consider it for "growth"
                     # TODO: Change this to a dynamic range, giving more flexibility
@@ -60,7 +60,7 @@ class OpponentModel:
         utility = 0
         for name in bid.getIssues():
             if not self.utility_estimate.__contains__((name, bid.getValue(name))):
-                self.utility_estimate[(name, bid.getValue(name))] = 1
+                self.utility_estimate[(name, bid.getValue(name))] = 2
             utility += self.weights[name] * self.utility_estimate[(name, bid.getValue(name))]
         return utility
 
