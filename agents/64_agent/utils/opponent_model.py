@@ -1,5 +1,5 @@
 from collections import defaultdict
-
+import numpy as np
 from geniusweb.issuevalue.Bid import Bid
 from geniusweb.issuevalue.DiscreteValueSet import DiscreteValueSet
 from geniusweb.issuevalue.Domain import Domain
@@ -7,55 +7,53 @@ from geniusweb.issuevalue.Value import Value
 
 
 class OpponentModel:
-    def __init__(self, domain: Domain):
-        self.offers = []
+    def __init__(self, domain: Domain, learning_rate: int = 0.2):
+        issue_amount = len(domain.getIssues())
+        # what issues have remained unchanged so far?
+        self.offers = {}
+        # what weights the opponent might have
+        self.weights = {}
+        # Values opponent has
+        self.values = {}
+        for name in domain.getIssues():
+            self.offers[name] = True
+            self.weights[name] = 1/issue_amount
+            self.values[name] = 1
+        # the domain
         self.domain = domain
-
-        self.issue_estimators = {
-            i: IssueEstimator(v) for i, v in domain.getIssuesValues().items()
-        }
+        # the learnign rate for this (factors in weight changes)j
+        self.learning_rate = learning_rate
+        # what is the latest offer our opponent has sent
+        self.latest = None
 
     def update(self, bid: Bid):
-        # keep track of all bids received
-        self.offers.append(bid)
-
-        # update all issue estimators with the value that is offered for that issue
-        for issue_id, issue_estimator in self.issue_estimators.items():
-            issue_estimator.update(bid.getValue(issue_id))
+        # bid has been received, it now will be kept track of ( might remove this, but useful for debug)
+        # We are in the first offer, so preferene profile needs to be initialised
+        if(self.latest == None):
+            self.latest = bid
+        else:
+            #We compare the last bid that came in. Does it change anything compares to
+            for name in bid.getIssues():
+                # check if it hasn't changed since the last one, or any before
+                new_value = bid.getValue(name)
+                old_value = self.latest.getValue(name)
+                if old_value == new_value and self.offers[name]:
+                    self.weights[name] += self.learning_rate
+                    self.values[name] += 1
+                else:
+                    # issue has changed, so we keep track of this and no longer consider it for "growth"
+                    # TODO: Change this to a dynamic range, giving more flexibility
+                    self.offers[name] = False
+            sum_of_weigths = sum(self.weights.values())
+            for name in self.weights:
+                self.weights[name] = self.weights[name]/sum_of_weigths
+            self.latest = bid
 
     def get_predicted_utility(self, bid: Bid):
-        if len(self.offers) == 0 or bid is None:
-            return 0
-
-        # initiate
-        total_issue_weight = 0.0
-        value_utilities = []
-        issue_weights = []
-
-        for issue_id, issue_estimator in self.issue_estimators.items():
-            # get the value that is set for this issue in the bid
-            value: Value = bid.getValue(issue_id)
-
-            # collect both the predicted weight for the issue and
-            # predicted utility of the value within this issue
-            value_utilities.append(issue_estimator.get_value_utility(value))
-            issue_weights.append(issue_estimator.weight)
-
-            total_issue_weight += issue_estimator.weight
-
-        # normalise the issue weights such that the sum is 1.0
-        if total_issue_weight == 0.0:
-            issue_weights = [1 / len(issue_weights) for _ in issue_weights]
-        else:
-            issue_weights = [iw / total_issue_weight for iw in issue_weights]
-
-        # calculate predicted utility by multiplying all value utilities with their issue weight
-        predicted_utility = sum(
-            [iw * vu for iw, vu in zip(issue_weights, value_utilities)]
-        )
-
-        return predicted_utility
-
+        utility = 0
+        for name in bid.getIssues():
+            utility += self.weights[name] * bid.getValue(name)
+        return utility
 
 class IssueEstimator:
     def __init__(self, value_set: DiscreteValueSet):
