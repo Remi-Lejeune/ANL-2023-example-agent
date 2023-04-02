@@ -1,5 +1,6 @@
 from collections import defaultdict
 import numpy as np
+from geniusweb.issuevalue import NumberValueSet
 from geniusweb.issuevalue.Bid import Bid
 from geniusweb.issuevalue.DiscreteValueSet import DiscreteValueSet
 from geniusweb.issuevalue.Domain import Domain
@@ -14,11 +15,11 @@ class OpponentModel:
         # what weights the opponent might have
         self.weights = {}
         # Values opponent has
-        self.values = {}
+        self.utility_estimate = {}
         for name in domain.getIssues():
             self.offers[name] = True
             self.weights[name] = 1/issue_amount
-            self.values[name] = 1
+
         # the domain
         self.domain = domain
         # the learnign rate for this (factors in weight changes)j
@@ -31,15 +32,21 @@ class OpponentModel:
         # We are in the first offer, so preferene profile needs to be initialised
         if(self.latest == None):
             self.latest = bid
+            for name in bid.getIssues():
+                utility_guess_name = bid.getValue(name)
+                self.utility_estimate[(name, utility_guess_name)] = 1
         else:
             #We compare the last bid that came in. Does it change anything compares to
             for name in bid.getIssues():
                 # check if it hasn't changed since the last one, or any before
-                new_value = bid.getValue(name)
-                old_value = self.latest.getValue(name)
+                new_value = bid.getValue(name).getValue()
+                old_value = self.latest.getValue(name).getValue()
                 if old_value == new_value and self.offers[name]:
                     self.weights[name] += self.learning_rate
-                    self.values[name] += 1
+                    if self.utility_estimate.__contains__((name, new_value)):
+                        self.utility_estimate[(name, new_value)] += 1
+                    else:
+                        self.utility_estimate[(name, new_value)] = 1
                 else:
                     # issue has changed, so we keep track of this and no longer consider it for "growth"
                     # TODO: Change this to a dynamic range, giving more flexibility
@@ -52,7 +59,9 @@ class OpponentModel:
     def get_predicted_utility(self, bid: Bid):
         utility = 0
         for name in bid.getIssues():
-            utility += self.weights[name] * bid.getValue(name)
+            if not self.utility_estimate.__contains__((name, bid.getValue(name))):
+                self.utility_estimate[(name, bid.getValue(name))] = 1
+            utility += self.weights[name] * self.utility_estimate[(name, bid.getValue(name))]
         return utility
 
 class IssueEstimator:
