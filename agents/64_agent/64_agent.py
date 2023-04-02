@@ -259,9 +259,15 @@ class Agent_64(DefaultParty):
         P = MinUtility + (1 - Ft) * (MaxUtility - MinUtility)
         # print("P: ", P)
         if (our_utility > P):
-            return 1
+            if self.opponent_model is not None:
+                opponent_utility = self.opponent_model.get_predicted_utility(bid)
+                # opponent_score = (1.0 - alpha * time_pressure) * opponent_utility
+                return opponent_utility
+            else:
+                return 1
         else:
             return 0
+
         # from template agent:
         # progress = self.progress.get(time() * 1000)
 
