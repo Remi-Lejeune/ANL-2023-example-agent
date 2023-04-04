@@ -183,7 +183,7 @@ class Agent_64(DefaultParty):
         """
         data = self.opponent_model.utility_estimate
         weights = self.opponent_model.weights
-        new_data = {}
+        new_data = {"Domain": self.domain.getName() }
         for key, value in data.items():
             if not new_data.__contains__(key[0]):
                 new_data[key[0]]= [{key[1] : value}]
@@ -192,8 +192,17 @@ class Agent_64(DefaultParty):
         for key in weights:
             new_data[key].append({'weight: ' : weights[key]})
         with open(f"{self.storage_dir}/data.json", "w") as f:
-            json.dump(new_data, f)
-
+            for key, value in new_data.items():
+                f.write(json.dumps(key))
+                f.write("\n")
+                if isinstance(value, str):
+                    f.write(json.dumps(value))
+                    f.write("\n")
+                else:
+                    for line in value:
+                        f.write("\t")
+                        f.write(json.dumps(line))
+                        f.write("\n")
     ###########################################################################################
     ################################## Example methods below ##################################
     ###########################################################################################
@@ -288,4 +297,4 @@ class Agent_64(DefaultParty):
         #     opponent_score = (1.0 - alpha * time_pressure) * opponent_utility
         #     score += opponent_score
 
-        return score
+        # return score
