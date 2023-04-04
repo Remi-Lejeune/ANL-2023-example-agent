@@ -33,12 +33,13 @@ class OpponentModel:
         if(self.latest == None):
             self.latest = bid
             for name in bid.getIssues():
-                utility_guess_name = bid.getValue(name)
+                utility_guess_name = bid.getValue(name).getValue()
                 self.utility_estimate[(name, utility_guess_name)] = 1
         else:
             #We compare the last bid that came in. Does it change anything compares to
             for name in bid.getIssues():
                 # check if it hasn't changed since the last one, or any before
+
                 new_value = bid.getValue(name).getValue()
                 old_value = self.latest.getValue(name).getValue()
                 if old_value == new_value:
@@ -59,9 +60,12 @@ class OpponentModel:
     def get_predicted_utility(self, bid: Bid):
         utility = 0
         for name in bid.getIssues():
-            if not self.utility_estimate.__contains__((name, bid.getValue(name))):
-                self.utility_estimate[(name, bid.getValue(name))] = 2
-            utility += self.weights[name] * self.utility_estimate[(name, bid.getValue(name))]
+            value_name = bid.getValue(name).getValue()
+            if not self.utility_estimate.__contains__((name, value_name)):
+                estimated_utility = 2
+            else:
+                estimated_utility = self.utility_estimate[(name, value_name)]
+            utility += self.weights[name] * estimated_utility
         return utility
 
 class IssueEstimator:

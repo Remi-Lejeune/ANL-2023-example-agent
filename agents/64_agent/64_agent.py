@@ -28,8 +28,8 @@ from geniusweb.references.Parameters import Parameters
 from tudelft_utilities_logging.ReportToLogger import ReportToLogger
 
 from .utils.opponent_model import OpponentModel
-
-
+import json
+import geniusweb.issuevalue.DiscreteValue
 class Agent_64(DefaultParty):
     """
     Group 64 implementation of negotiator
@@ -181,9 +181,18 @@ class Agent_64(DefaultParty):
         for learning capabilities. Note that no extensive calculations can be done within this method.
         Taking too much time might result in your agent being killed, so use it for storage only.
         """
-        data = "Data for learning (see README.md)"
-        with open(f"{self.storage_dir}/data.md", "w") as f:
-            f.write(data)
+        data = self.opponent_model.utility_estimate
+        weights = self.opponent_model.weights
+        new_data = {}
+        for key, value in data.items():
+            if not new_data.__contains__(key[0]):
+                new_data[key[0]]= [{key[1] : value}]
+            else:
+                new_data[key[0]].append({key[1] : value})
+        for key in weights:
+            new_data[key].append({'weight: ' : weights[key]})
+        with open(f"{self.storage_dir}/data.json", "w") as f:
+            json.dump(new_data, f)
 
     ###########################################################################################
     ################################## Example methods below ##################################
