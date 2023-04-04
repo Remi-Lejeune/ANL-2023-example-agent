@@ -222,7 +222,7 @@ class Agent_64(DefaultParty):
         return all(conditions)
 
     def simple_acceptance_condition(self, received_bid: Bid, next_bid: Bid) -> bool:
-        return self.profile.getUtility(received_bid) >= self.profile.getUtility(next_bid)
+        return self.profile.getUtility(received_bid) >= self.formula()
 
     def find_bid(self) -> Bid:
         # compose a list of all possible bids
@@ -241,7 +241,26 @@ class Agent_64(DefaultParty):
 
         return best_bid
 
-    def score_bid(self, bid: Bid, MinUtility=0.58, MaxUtility=1, k=0.05, e=5, T=1) -> float:
+
+    def formula(self, MinUtility=0.58, MaxUtility=1, k=0.05, e=5, T=1):
+        # MinUtility = 0
+        # MaxUtility = 1
+        # k = 0.05
+        # e = 0.02
+        # T = 10000
+
+        # T is 1
+        t = self.progress.get(time() * 1000)  # in between 0 and 1
+        # print("t: ", t)
+
+        Ft = k + (1 - k) * (min(t, T) / T) ** (1 / e)
+        # print("Ft: ", Ft)
+
+        P = MinUtility + (1 - Ft) * (MaxUtility - MinUtility)
+
+        return P
+
+    def score_bid(self, bid: Bid) -> float:
         # def score_bid(self, bid: Bid, alpha: float = 0.95, eps: float = 0.1) -> float:
         """Calculate heuristic score for a bid
 
@@ -268,13 +287,7 @@ class Agent_64(DefaultParty):
         # T = 10000
 
         # T is 1
-        t = self.progress.get(time() * 1000)  # in between 0 and 1
-        # print("t: ", t)
-
-        Ft = k + (1 - k) * (min(t, T) / T) ** (1 / e)
-        # print("Ft: ", Ft)
-
-        P = MinUtility + (1 - Ft) * (MaxUtility - MinUtility)
+        P = self.formula()
         # print("P: ", P)
         if (our_utility > P):
             if self.opponent_model is not None:
