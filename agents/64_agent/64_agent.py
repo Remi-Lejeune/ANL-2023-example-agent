@@ -154,7 +154,7 @@ class Agent_64(DefaultParty):
             bid = cast(Offer, action).getBid()
 
             # update opponent model with bid
-            self.opponent_model.update(bid)
+            self.opponent_model.update(bid, self.progress.get(time() * 1000))
             # set bid as last received
             self.last_received_bid = bid
 
@@ -190,7 +190,7 @@ class Agent_64(DefaultParty):
             else:
                 new_data[key[0]].append({key[1] : value})
         for key in weights:
-            new_data[key].append({'weight: ' : weights[key]})
+            new_data[key].insert(0,{'weight: ' : weights[key]})
         with open(f"{self.storage_dir}/data.json", "w") as f:
             for key, value in new_data.items():
                 f.write(json.dumps(key))

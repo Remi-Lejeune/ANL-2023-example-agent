@@ -8,7 +8,7 @@ from geniusweb.issuevalue.Value import Value
 
 
 class OpponentModel:
-    def __init__(self, domain: Domain, learning_rate: int = 0.2):
+    def __init__(self, domain: Domain, learning_rate: int = 0.3):
         issue_amount = len(domain.getIssues())
         # what issues have remained unchanged so far?
         self.offers = {}
@@ -27,7 +27,7 @@ class OpponentModel:
         # what is the latest offer our opponent has sent
         self.latest = None
 
-    def update(self, bid: Bid):
+    def update(self, bid: Bid, t: float):
         # bid has been received, it now will be kept track of ( might remove this, but useful for debug)
         # We are in the first offer, so preferene profile needs to be initialised
         if(self.latest == None):
@@ -45,7 +45,7 @@ class OpponentModel:
                 if old_value == new_value:
                     self.weights[name] += self.learning_rate
                     if self.utility_estimate.__contains__((name, new_value)):
-                        self.utility_estimate[(name, new_value)] += 1
+                        self.utility_estimate[(name, new_value)] += np.exp(-2*t)
                     else:
                         self.utility_estimate[(name, new_value)] = 1
                 else:
