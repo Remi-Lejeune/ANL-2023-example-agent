@@ -222,7 +222,7 @@ class Agent_64(DefaultParty):
         return all(conditions)
 
     def simple_acceptance_condition(self, received_bid: Bid, next_bid: Bid) -> bool:
-        return self.profile.getUtility(received_bid) >= self.formula()
+        return self.profile.getUtility(received_bid) >= self.profile.getUtility(next_bid)
 
     def find_bid(self) -> Bid:
         # compose a list of all possible bids
