@@ -222,13 +222,19 @@ class Agent_64(DefaultParty):
         return all(conditions)
 
     def simple_acceptance_condition(self, received_bid: Bid, next_bid: Bid) -> bool:
-        return self.profile.getUtility(received_bid) >= self.formula()
+        return self.profile.getUtility(received_bid) >= self.calculateCurrentAcceptableUtility()
+
 
     def find_bid(self) -> Bid:
+        """Finds the best bid to bid, according to our model.
+            Returns:
+                best_bid (Bid): the best bid the function found in the first 500 bids
+        """
         # compose a list of all possible bids
         domain = self.profile.getDomain()
         all_bids = AllBidsList(domain)
 
+        #starting values that will get overwritten
         best_bid_score = -0.1
         best_bid = None
 
@@ -242,72 +248,50 @@ class Agent_64(DefaultParty):
         return best_bid
 
 
-    def formula(self, MinUtility=0.58, MaxUtility=1, k=0.05, e=5, T=1):
-        # MinUtility = 0
-        # MaxUtility = 1
-        # k = 0.05
-        # e = 0.02
-        # T = 10000
-
-        # T is 1
+    def calculateCurrentAcceptableUtility(self, MinUtility=0.63, MaxUtility=1, k=0.05, e=4, T=1):
+        """Calculates the P value which represents the utility that is acceptable by the agent at that time.
+        Args:
+            MinUtility (float): The minimum utility when t = T = 1, default = 0.63
+            MaxUtility (float): The maximum utility a bid can have = 1
+            k (float): How strongly the function is curved (especially at the beginning)
+            e (float): How fast the agent concedes
+            T (float): Total time
+        Returns:
+            float: score
+        """
+        #The current time t
         t = self.progress.get(time() * 1000)  # in between 0 and 1
-        # print("t: ", t)
 
+        #Concession function
         Ft = k + (1 - k) * (min(t, T) / T) ** (1 / e)
-        # print("Ft: ", Ft)
 
+        #Utility at which the agent is willing to concede
         P = MinUtility + (1 - Ft) * (MaxUtility - MinUtility)
-
         return P
 
     def score_bid(self, bid: Bid) -> float:
-        # def score_bid(self, bid: Bid, alpha: float = 0.95, eps: float = 0.1) -> float:
         """Calculate heuristic score for a bid
 
         Args:
             bid (Bid): Bid to score
-            alpha (float, optional): Trade-off factor between self interested and
-                altruistic behaviour. Defaults to 0.95.
-            eps (float, optional): Time pressure factor, balances between conceding
-                and Boulware behaviour over time. Defaults to 0.1.
-
         Returns:
             float: score
         """
-
-        # Our agent gives 0 for bids it wont consider and 1 for bids it will.
-        # The opponent moddeling will determine which bid with a score of 1  will be made.
-
+        # Given a bid, we calculate our utility for it first.
         our_utility = float(self.profile.getUtility(bid))
 
-        # MinUtility = 0
-        # MaxUtility = 1
-        # k = 0.05
-        # e = 0.02
-        # T = 10000
+        # Then we calculate what the minimum acceptable utility is at the moment.
+        P = self.calculateCurrentAcceptableUtility()
 
-        # T is 1
-        P = self.formula()
-        # print("P: ", P)
+        # Check if we find the bid acceptable
         if (our_utility > P):
             if self.opponent_model is not None:
+                # If we have an opponent model, return the utility we believe the opponent has for this
                 opponent_utility = self.opponent_model.get_predicted_utility(bid)
-                # opponent_score = (1.0 - alpha * time_pressure) * opponent_utility
                 return opponent_utility
             else:
+                # If there is no opponent model, just return 1
                 return 1
-        else:
+        else: # The bid is not acceptable
             return 0
 
-        # from template agent:
-        # progress = self.progress.get(time() * 1000)
-
-        # time_pressure = 1.0 - progress ** (1 / eps)
-        # score = alpha * time_pressure * our_utility
-        #
-        # if self.opponent_model is not None:
-        #     opponent_utility = self.opponent_model.get_predicted_utility(bid)
-        #     opponent_score = (1.0 - alpha * time_pressure) * opponent_utility
-        #     score += opponent_score
-
-        # return score
