@@ -44,21 +44,25 @@ class OpponentModel:
                 old_value = self.latest.getValue(name).getValue()
                 if old_value == new_value:
                     self.weights[name] += self.learning_rate
+                    # Value has already been encountered
                     if self.utility_estimate.__contains__((name, new_value)):
+                        # Updates the value with a temperature function. The greater the time, the less it impacts value
                         self.utility_estimate[(name, new_value)] += np.exp(-2*t)
                     else:
+                        # Value has not been encountered before
                         self.utility_estimate[(name, new_value)] = 1
                 else:
                     # issue has changed, so we keep track of this and no longer consider it for "growth"
-                    # TODO: Change this to a dynamic range, giving more flexibility
                     self.offers[name] = False
             sum_of_weigths = sum(self.weights.values())
+            # Normalise weights
             for name in self.weights:
                 self.weights[name] = self.weights[name]/sum_of_weigths
             self.latest = bid
 
     def get_predicted_utility(self, bid: Bid):
         utility = 0
+
         for name in bid.getIssues():
             value_name = bid.getValue(name).getValue()
             if not self.utility_estimate.__contains__((name, value_name)):
