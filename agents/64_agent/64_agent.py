@@ -208,20 +208,37 @@ class Agent_64(DefaultParty):
     ###########################################################################################
 
     def accept_condition(self, received_bid: Bid, next_bid: Bid) -> bool:
+
+        """ This function is used to determine if the received bid is acceptable or not.
+
+            Args:
+                received_bid (Bid): the bid received from the opponent
+                next_bid (Bid): the bid we are going to propose
+        """
         if received_bid is None:
             return False
+
 
         # progress of the negotiation session between 0 and 1 (1 is deadline)
         progress = self.progress.get(time() * 1000)
 
-        # very basic approach that accepts if the offer is valued above 0.7 and
-        # 95% of the time towards the deadline has passed
         conditions = [
+            #Our acceptance condition
             self.simple_acceptance_condition(received_bid, next_bid)
         ]
         return all(conditions)
 
     def simple_acceptance_condition(self, received_bid: Bid, next_bid: Bid) -> bool:
+        """ This function look if the received bid is higher than the current acceptable utility
+            and accept if it is the case.
+
+            Args:
+                received_bid (Bid): the bid received from the opponent
+                next_bid (Bid): the bid we are going to propose (this is not use here)
+
+            Returns:
+                bool: True if the received bid is higher than the current acceptable utility
+        """
         return self.profile.getUtility(received_bid) >= self.calculateCurrentAcceptableUtility()
 
 
