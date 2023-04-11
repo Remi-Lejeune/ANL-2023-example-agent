@@ -239,7 +239,7 @@ class Agent_64(DefaultParty):
             Returns:
                 bool: True if the received bid is higher than the current acceptable utility
         """
-        return self.profile.getUtility(received_bid) >= self.calculateCurrentAcceptableUtility()
+        return self.profile.getUtility(received_bid) >= self.calculate_current_acceptable_utility()
 
 
     def find_bid(self) -> Bid:
@@ -265,7 +265,7 @@ class Agent_64(DefaultParty):
         return best_bid
 
 
-    def calculateCurrentAcceptableUtility(self, MinUtility=0.63, MaxUtility=1, k=0.05, e=4, T=1):
+    def calculate_current_acceptable_utility(self, MinUtility=0.63, MaxUtility=1, k=0.05, e=4, T=1):
         """Calculates the P value which represents the utility that is acceptable by the agent at that time.
         Args:
             MinUtility (float): The minimum utility when t = T = 1, default = 0.63
@@ -298,7 +298,7 @@ class Agent_64(DefaultParty):
         our_utility = float(self.profile.getUtility(bid))
 
         # Then we calculate what the minimum acceptable utility is at the moment.
-        P = self.calculateCurrentAcceptableUtility()
+        P = self.calculate_current_acceptable_utility()
 
         # Check if we find the bid acceptable
         if (our_utility > P):
